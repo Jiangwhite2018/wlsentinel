@@ -1188,11 +1188,16 @@ video {
         input[type=number] { -moz-appearance: textfield; }
         
         /* 统一的表格样式 */
-        .data-table { width: 100%; text-align: center; font-size: 0.875rem; border-collapse: collapse; background: #fff; }
+        .data-table { width: 100%; text-align: center; font-size: 0.875rem; border-collapse: collapse; background: #fff; border: 1px solid #cbd5e1; }
         .data-table th, .data-table td { border: 1px solid #cbd5e1; padding: 0.5rem; }
         .data-table th { background-color: #f1f5f9; font-weight: 600; color: #1e293b; position: sticky; top: 0; z-index: 10; }
         .data-table tbody tr:nth-child(even) { background-color: #f8fafc; }
         .data-table tbody tr:hover { background-color: #e0f2fe; }
+        
+        /* 复杂表头处理，确保sticky时的边框 */
+        .data-table thead tr:nth-child(1) th { top: 0; }
+        .data-table thead tr:nth-child(2) th { top: 37px; } /* 根据第一行表头高度调整，通常大约 37px */
+        .data-table thead tr:nth-child(3) th { top: 74px; }
         
         /* 针对输入框内嵌的处理 */
         .data-table td.p-0 { padding: 0; }
@@ -1224,44 +1229,54 @@ video {
             
             <!-- 1. 铜排模块 -->
             <div v-show="currentTab === 'copper'" class="space-y-4">
-                <div class="flex gap-2">
-                    <input v-model="copperSearch" type="text" placeholder="🔍 搜索规格，如 30×4" 
-                        class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none">
-                    <select v-model="copperPieces" class="p-2 border border-gray-300 rounded bg-white outline-none">
-                        <option value="1">单片</option>
-                        <option value="2">2片叠加</option>
-                        <option value="3">3片叠加</option>
-                    </select>
-                </div>
                 
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
                     <div class="overflow-x-auto max-h-[70vh]">
-                        <table class="data-table">
+                        <table class="data-table" style="min-width: 650px; font-size: 0.75rem;">
                             <thead>
                                 <tr>
-                                    <th>规格(mm)</th>
-                                    <th>重量<br>(kg/m)</th>
-                                    <th>敞露AC<br>(A)</th>
-                                    <th>封闭AC<br>(A)</th>
-                                    <th v-if="copperPieces === '1'">效率比</th>
-                                    <th>操作</th>
+                                    <th rowspan="3" class="align-middle px-1">母线尺寸宽<br>×厚(mm)</th>
+                                    <th rowspan="3" class="align-middle px-1">重量<br>(kg/m)</th>
+                                    <th colspan="5" class="py-1">敞露母线</th>
+                                    <th colspan="5" class="py-1">封闭母线</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3">交流负荷</th>
+                                    <th colspan="2">直流负荷</th>
+                                    <th colspan="3">交流负荷</th>
+                                    <th colspan="2">直流负荷</th>
+                                </tr>
+                                <tr>
+                                    <th class="px-1">1</th>
+                                    <th class="px-1">2</th>
+                                    <th class="px-1">3</th>
+                                    <th class="px-1">1</th>
+                                    <th class="px-1">2</th>
+                                    <th class="px-1">1</th>
+                                    <th class="px-1">2</th>
+                                    <th class="px-1">3</th>
+                                    <th class="px-1">1</th>
+                                    <th class="px-1">2</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="item in filteredCopper" :key="item.spec">
-                                    <td class="font-bold text-gray-700">{{ item.spec }}</td>
-                                    <td class="text-gray-600">{{ item.weight }}</td>
-                                    <td class="text-blue-600 font-semibold">{{ copperPieces === '1' ? item.open_ac : '待补充' }}</td>
-                                    <td class="text-blue-600 font-semibold">{{ copperPieces === '1' ? item.closed_ac : '待补充' }}</td>
-                                    <td v-if="copperPieces === '1'">
-                                        <span :class="getEfficiencyColor(item)">{{ calcEfficiency(item) }}%</span>
-                                    </td>
-                                    <td>
-                                        <button @click="copyText(`铜排 ${item.spec}, 重${item.weight}kg/m, 敞露${item.open_ac}A, 封闭${item.closed_ac}A`)" class="text-blue-500 text-xs border border-blue-500 px-2 py-1 rounded hover:bg-blue-500 hover:text-white transition">复制</button>
-                                    </td>
-                                </tr>
-                                <tr v-if="filteredCopper.length === 0">
-                                    <td colspan="6" class="p-4 text-gray-400">未找到匹配的规格</td>
+                                <tr v-for="item in copperData" :key="item.spec">
+                                    <td class="font-bold text-gray-800 whitespace-nowrap px-1">{{ item.spec }}</td>
+                                    <td class="text-gray-700 px-1">{{ item.weight }}</td>
+                                    <!-- 敞露交流 -->
+                                    <td class="text-blue-600 font-bold px-1">{{ item.o_ac_1 }}</td>
+                                    <td class="text-blue-600 font-bold px-1">{{ item.o_ac_2 || '' }}</td>
+                                    <td class="text-blue-600 font-bold px-1">{{ item.o_ac_3 || '' }}</td>
+                                    <!-- 敞露直流 -->
+                                    <td class="text-orange-600 font-bold px-1">{{ item.o_dc_1 }}</td>
+                                    <td class="text-orange-600 font-bold px-1">{{ item.o_dc_2 || '' }}</td>
+                                    <!-- 封闭交流 -->
+                                    <td class="text-blue-600 font-bold px-1">{{ item.c_ac_1 }}</td>
+                                    <td class="text-blue-600 font-bold px-1">{{ item.c_ac_2 || '' }}</td>
+                                    <td class="text-blue-600 font-bold px-1">{{ item.c_ac_3 || '' }}</td>
+                                    <!-- 封闭直流 -->
+                                    <td class="text-orange-600 font-bold px-1">{{ item.c_dc_1 }}</td>
+                                    <td class="text-orange-600 font-bold px-1">{{ item.c_dc_2 || '' }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1277,31 +1292,28 @@ video {
                         <option value="round">圆钢</option>
                         <option value="square">方钢</option>
                         <option value="angle">等边角钢</option>
+                        <option value="unequal_angle">不等边角钢</option>
                         <option value="channel">槽钢</option>
                     </select>
                     <input v-model="profileSearch" type="text" placeholder="🔍 搜索尺寸" class="w-1/3 p-2 border border-gray-300 rounded outline-none">
                 </div>
                 
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
                     <div class="overflow-x-auto max-h-[70vh]">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>规格 / 型号</th>
                                     <th>每米重量 (kg/m)</th>
-                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in filteredProfile" :key="item.spec">
-                                    <td class="font-medium">{{ item.spec }}</td>
-                                    <td class="text-blue-600 font-semibold">{{ item.weight }}</td>
-                                    <td>
-                                        <button @click="copyText(`型材: ${profileTypeName} ${item.spec}, 重量: ${item.weight} kg/m`)" class="text-blue-500 text-xs px-2 py-1 border border-blue-500 rounded hover:bg-blue-500 hover:text-white transition">复制</button>
-                                    </td>
+                                    <td class="font-bold text-gray-800">{{ item.spec }}</td>
+                                    <td class="text-blue-600 font-bold">{{ item.weight }}</td>
                                 </tr>
                                 <tr v-if="filteredProfile.length === 0">
-                                    <td colspan="3" class="p-4 text-gray-400">未找到匹配的规格</td>
+                                    <td colspan="2" class="p-4 text-gray-400">未找到匹配的规格</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1326,7 +1338,7 @@ video {
                     </select>
                 </div>
                 
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
                     <div class="overflow-x-auto max-h-[65vh]">
                         <table class="data-table">
                             <thead>
@@ -1335,18 +1347,14 @@ video {
                                     <th>线径<br>(mm²)</th>
                                     <th>空气载流<br>(A)</th>
                                     <th>直埋载流<br>(A)</th>
-                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in filteredCable" :key="item.core + item.model + item.area">
-                                    <td class="font-medium text-gray-700">{{ item.core }}芯-{{ item.model }}</td>
+                                    <td class="font-bold text-gray-800">{{ item.core }}芯-{{ item.model }}</td>
                                     <td class="font-bold text-gray-900">{{ item.area }}</td>
                                     <td class="text-blue-600 font-bold text-base">{{ item.air }}</td>
                                     <td class="text-blue-600 font-bold text-base">{{ item.buried }}</td>
-                                    <td>
-                                        <button @click="copyText(`${item.core}芯-${item.model} ${item.area}mm²: 空气载流${item.air}A, 直埋载流${item.buried}A`)" class="text-blue-500 text-xs px-2 py-1 border border-blue-500 rounded hover:bg-blue-500 hover:text-white transition">复制</button>
-                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1356,7 +1364,7 @@ video {
 
             <!-- 4. 变压器模块 -->
             <div v-show="currentTab === 'transformer'" class="space-y-4">
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center justify-between shadow-sm">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 flex items-center justify-between shadow-sm">
                     <span class="font-medium text-blue-800">低压侧标称电压：</span>
                     <select v-model="transformerLowV" class="p-2 border border-blue-300 rounded bg-white text-blue-800 font-bold outline-none">
                         <option value="400">400V (0.4kV)</option>
@@ -1364,7 +1372,7 @@ video {
                     </select>
                 </div>
                 
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
                     <div class="overflow-x-auto max-h-[65vh]">
                         <table class="data-table">
                             <thead>
@@ -1372,17 +1380,13 @@ video {
                                     <th>容量<br>(kVA)</th>
                                     <th>10kV侧<br>电流(A)</th>
                                     <th>{{ transformerLowV }}V侧<br>电流(A)</th>
-                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in transformerData" :key="item.capacity">
-                                    <td class="font-bold">{{ item.capacity }}</td>
-                                    <td class="text-gray-600">{{ item.i_high }}</td>
-                                    <td class="text-blue-600 font-bold">{{ item.i_low }}</td>
-                                    <td>
-                                        <button @click="copyText(`${item.capacity}kVA变压器: 高压侧${item.i_high}A, 低压侧${item.i_low}A`)" class="text-blue-500 text-xs px-2 py-1 border border-blue-500 rounded hover:bg-blue-500 hover:text-white transition">复制</button>
-                                    </td>
+                                    <td class="font-bold text-gray-800">{{ item.capacity }}</td>
+                                    <td class="text-gray-800 font-bold">{{ item.i_high }}</td>
+                                    <td class="text-blue-600 font-bold text-base">{{ item.i_low }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1393,12 +1397,12 @@ video {
             <!-- 5. 箱体模块 -->
             <div v-show="currentTab === 'box'" class="space-y-4">
                 <div class="flex rounded-md shadow-sm mb-2" role="group">
-                    <button type="button" @click="boxMode = 'expand'" :class="['flex-1 py-2.5 text-sm font-medium border rounded-l-lg transition', boxMode === 'expand' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">展开面积计算</button>
-                    <button type="button" @click="boxMode = 'base'" :class="['flex-1 py-2.5 text-sm font-medium border-t border-b border-r rounded-r-lg transition', boxMode === 'base' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">底座面积计算</button>
+                    <button type="button" @click="boxMode = 'expand'" :class="['flex-1 py-2.5 text-sm font-bold border rounded-l-lg transition', boxMode === 'expand' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">展开面积计算</button>
+                    <button type="button" @click="boxMode = 'base'" :class="['flex-1 py-2.5 text-sm font-bold border-t border-b border-r rounded-r-lg transition', boxMode === 'base' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">底座面积计算</button>
                 </div>
 
                 <!-- 展开面积 -->
-                <div v-if="boxMode === 'expand'" class="bg-white rounded-lg shadow overflow-hidden">
+                <div v-if="boxMode === 'expand'" class="bg-white shadow overflow-hidden border border-gray-300">
                     <div class="overflow-x-auto">
                         <table class="data-table">
                             <thead>
@@ -1410,29 +1414,29 @@ video {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>宽 W (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxW" placeholder="宽"></td>
+                                    <td class="font-bold text-gray-800">宽 W (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxW" placeholder="宽(正整数)"></td>
                                     <td rowspan="4" class="align-middle bg-blue-50 border-b border-blue-200">
-                                        <div class="text-xs text-gray-500">展开总面积</div>
-                                        <div class="font-bold text-lg text-blue-600">{{ boxResult.area }} <span class="text-xs font-normal">㎡</span></div>
+                                        <div class="text-xs text-gray-600 font-bold mb-1">展开总面积</div>
+                                        <div class="font-bold text-xl text-blue-600">{{ boxResult.area }} <span class="text-xs font-normal text-gray-600">㎡</span></div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>深 D (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxD" placeholder="深"></td>
+                                    <td class="font-bold text-gray-800">深 D (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxD" placeholder="深(正整数)"></td>
                                 </tr>
                                 <tr>
-                                    <td>高 H (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxH" placeholder="高"></td>
+                                    <td class="font-bold text-gray-800">高 H (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxH" placeholder="高(正整数)"></td>
                                 </tr>
                                 <tr>
-                                    <td>板厚 (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxT" placeholder="如 1.5"></td>
+                                    <td class="font-bold text-gray-800">板厚 (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxT" placeholder="如 1.5"></td>
                                 </tr>
                                 <tr>
-                                    <td>材质</td>
+                                    <td class="font-bold text-gray-800">材质</td>
                                     <td class="p-0">
-                                        <select v-model="boxMat">
+                                        <select v-model="boxMat" class="font-bold">
                                             <option value="201">201</option>
                                             <option value="203">203</option>
                                             <option value="301">301</option>
@@ -1440,29 +1444,24 @@ video {
                                         </select>
                                     </td>
                                     <td rowspan="3" class="align-middle bg-blue-50">
-                                        <div class="text-xs text-gray-500">理论总重量</div>
-                                        <div class="font-bold text-lg text-blue-600">{{ boxResult.weight }} <span class="text-xs font-normal">kg</span></div>
-                                        <div class="text-xs text-gray-500 mt-2">预计总材料费</div>
-                                        <div class="font-bold text-lg text-red-600">¥ {{ boxResult.cost }}</div>
+                                        <div class="text-xs text-gray-600 font-bold mb-1">理论总重量</div>
+                                        <div class="font-bold text-xl text-blue-600">{{ boxResult.weight }} <span class="text-xs font-normal text-gray-600">kg</span></div>
+                                        <div class="text-xs text-gray-600 font-bold mt-3 mb-1">预计总材料费</div>
+                                        <div class="font-bold text-xl text-red-600">¥ {{ boxResult.cost }}</div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>计价单位</td>
+                                    <td class="font-bold text-gray-800">计价单位</td>
                                     <td class="p-0">
-                                        <select v-model="boxPriceUnit">
+                                        <select v-model="boxPriceUnit" class="font-bold">
                                             <option value="kg">元 / kg</option>
                                             <option value="m2">元 / ㎡</option>
                                         </select>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>单价 (元)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxPrice" placeholder="单价"></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="p-2">
-                                        <button @click="copyText(`展开箱体 ${boxW}×${boxD}×${boxH} mm (厚${boxT}mm), 面积:${boxResult.area}㎡, 重量:${boxResult.weight}kg, 费用:¥${boxResult.cost}`)" class="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition shadow-sm">一键复制结果</button>
-                                    </td>
+                                    <td class="font-bold text-gray-800">单价 (元)</td>
+                                    <td class="p-0"><input type="number" min="0" step="0.1" v-model.number="boxPrice" placeholder="单价"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1470,7 +1469,7 @@ video {
                 </div>
 
                 <!-- 底座面积 -->
-                <div v-if="boxMode === 'base'" class="bg-white rounded-lg shadow overflow-hidden">
+                <div v-if="boxMode === 'base'" class="bg-white shadow overflow-hidden border border-gray-300">
                     <div class="overflow-x-auto">
                         <table class="data-table">
                             <thead>
@@ -1482,25 +1481,25 @@ video {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>底座宽 (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxBaseW" placeholder="宽"></td>
+                                    <td class="font-bold text-gray-800">底座宽 (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxBaseW" placeholder="宽(正整数)"></td>
                                     <td rowspan="3" class="align-middle bg-blue-50 border-b border-blue-200">
-                                        <div class="text-xs text-gray-500">底座投影面积</div>
-                                        <div class="font-bold text-lg text-blue-600">{{ boxBaseResult.area }} <span class="text-xs font-normal">㎡</span></div>
+                                        <div class="text-xs text-gray-600 font-bold mb-1">底座投影面积</div>
+                                        <div class="font-bold text-xl text-blue-600">{{ boxBaseResult.area }} <span class="text-xs font-normal text-gray-600">㎡</span></div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>底座深 (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxBaseD" placeholder="深"></td>
+                                    <td class="font-bold text-gray-800">底座深 (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxBaseD" placeholder="深(正整数)"></td>
                                 </tr>
                                 <tr>
-                                    <td>板厚 (mm)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxBaseT" placeholder="如 1.5"></td>
+                                    <td class="font-bold text-gray-800">板厚 (mm)</td>
+                                    <td class="p-0"><input type="number" min="1" step="1" v-model.number="boxBaseT" placeholder="如 1.5"></td>
                                 </tr>
                                 <tr>
-                                    <td>材质</td>
+                                    <td class="font-bold text-gray-800">材质</td>
                                     <td class="p-0">
-                                        <select v-model="boxMat">
+                                        <select v-model="boxMat" class="font-bold">
                                             <option value="201">201</option>
                                             <option value="203">203</option>
                                             <option value="301">301</option>
@@ -1508,29 +1507,24 @@ video {
                                         </select>
                                     </td>
                                     <td rowspan="3" class="align-middle bg-blue-50">
-                                        <div class="text-xs text-gray-500">底座理论重量</div>
-                                        <div class="font-bold text-lg text-blue-600">{{ boxBaseResult.weight }} <span class="text-xs font-normal">kg</span></div>
-                                        <div class="text-xs text-gray-500 mt-2">底座材料成本</div>
-                                        <div class="font-bold text-lg text-red-600">¥ {{ boxBaseResult.cost }}</div>
+                                        <div class="text-xs text-gray-600 font-bold mb-1">底座理论重量</div>
+                                        <div class="font-bold text-xl text-blue-600">{{ boxBaseResult.weight }} <span class="text-xs font-normal text-gray-600">kg</span></div>
+                                        <div class="text-xs text-gray-600 font-bold mt-3 mb-1">底座材料成本</div>
+                                        <div class="font-bold text-xl text-red-600">¥ {{ boxBaseResult.cost }}</div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>计价单位</td>
+                                    <td class="font-bold text-gray-800">计价单位</td>
                                     <td class="p-0">
-                                        <select v-model="boxPriceUnit">
+                                        <select v-model="boxPriceUnit" class="font-bold">
                                             <option value="kg">元 / kg</option>
                                             <option value="m2">元 / ㎡</option>
                                         </select>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>单价 (元)</td>
-                                    <td class="p-0"><input type="number" v-model.number="boxPrice" placeholder="单价"></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="p-2">
-                                        <button @click="copyText(`底座 ${boxBaseW}×${boxBaseD} mm (厚${boxBaseT}mm), 面积:${boxBaseResult.area}㎡, 重量:${boxBaseResult.weight}kg, 费用:¥${boxBaseResult.cost}`)" class="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition shadow-sm">一键复制结果</button>
-                                    </td>
+                                    <td class="font-bold text-gray-800">单价 (元)</td>
+                                    <td class="p-0"><input type="number" min="0" step="0.1" v-model.number="boxPrice" placeholder="单价"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1540,7 +1534,7 @@ video {
 
             <!-- 6. 换算模块 -->
             <div v-show="currentTab === 'calc'" class="space-y-4">
-                <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -1551,38 +1545,40 @@ video {
                         </thead>
                         <tbody>
                             <tr>
-                                <td>有功功率 P (kW)</td>
-                                <td class="p-0"><input v-model.number="calcKw" type="number" inputmode="decimal" placeholder="输入kW"></td>
+                                <td class="font-bold text-gray-800">有功功率 P (kW)</td>
+                                <td class="p-0"><input v-model.number="calcKw" type="number" inputmode="decimal" placeholder="输入kW" class="font-bold text-blue-600"></td>
                                 <td rowspan="3" class="align-middle bg-blue-50">
-                                    <div class="text-xs text-blue-600 mb-1">视在功率 (S)</div>
-                                    <div class="text-xl font-bold text-blue-700">{{ calcResultKva }} <span class="text-xs font-normal">kVA</span></div>
-                                    <div class="text-xs text-orange-600 mt-3 mb-1">额定电流 (I)</div>
-                                    <div class="text-xl font-bold text-orange-600">{{ calcResultCurrent }} <span class="text-xs font-normal">A</span></div>
-                                    <button @click="copyText(`输入 ${calcKw||0}kW: 视在功率 ${calcResultKva}kVA, 额定电流 ${calcResultCurrent}A`)" class="mt-4 text-xs bg-white text-blue-600 px-3 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-blue-100 transition">一键复制</button>
+                                    <div class="text-xs text-gray-600 font-bold mb-1">视在功率 (S)</div>
+                                    <div class="text-2xl font-bold text-blue-700">{{ calcResultKva }} <span class="text-xs font-normal text-gray-600">kVA</span></div>
+                                    <div class="text-xs text-gray-600 font-bold mt-4 mb-1">额定电流 (I)</div>
+                                    <div class="text-2xl font-bold text-orange-600">{{ calcResultCurrent }} <span class="text-xs font-normal text-gray-600">A</span></div>
                                 </td>
                             </tr>
                             <tr>
-                                <td>功率因数 (cosΦ)</td>
+                                <td class="font-bold text-gray-800">功率因数 (cosΦ)</td>
                                 <td class="p-0"><input v-model.number="calcPf" type="number" inputmode="decimal" step="0.01" placeholder="默认 0.80"></td>
                             </tr>
                             <tr>
-                                <td>设备效率 (η)</td>
+                                <td class="font-bold text-gray-800">设备效率 (η)</td>
                                 <td class="p-0"><input v-model.number="calcEff" type="number" inputmode="decimal" step="0.01" placeholder="默认 0.95"></td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="text-xs text-gray-500 mt-2 text-center bg-gray-50 py-2 border border-gray-200">
+                    * 参考公式: S = P / cosΦ, I = (P×1000) / (√3×U×cosΦ×η), 默认U=380V
                 </div>
             </div>
 
             <!-- 7. UPS模块 -->
             <div v-show="currentTab === 'ups'" class="space-y-4">
                 <div class="flex rounded-md shadow-sm mb-2" role="group">
-                    <button type="button" @click="upsMode = 'forward'" :class="['flex-1 py-2.5 text-sm font-medium border rounded-l-lg transition', upsMode === 'forward' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">算续航时间</button>
-                    <button type="button" @click="upsMode = 'backward'" :class="['flex-1 py-2.5 text-sm font-medium border-t border-b border-r rounded-r-lg transition', upsMode === 'backward' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">算电池配置</button>
+                    <button type="button" @click="upsMode = 'forward'" :class="['flex-1 py-2.5 text-sm font-bold border rounded-l-lg transition', upsMode === 'forward' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">算续航时间</button>
+                    <button type="button" @click="upsMode = 'backward'" :class="['flex-1 py-2.5 text-sm font-bold border-t border-b border-r rounded-r-lg transition', upsMode === 'backward' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">算电池配置</button>
                 </div>
 
                 <!-- 正向：算时间 -->
-                <div v-if="upsMode === 'forward'" class="bg-white rounded-lg shadow overflow-hidden">
+                <div v-if="upsMode === 'forward'" class="bg-white shadow overflow-hidden border border-gray-300">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -1593,32 +1589,31 @@ video {
                         </thead>
                         <tbody>
                             <tr>
-                                <td>UPS总功率 (kVA)</td>
-                                <td class="p-0"><input v-model.number="upsF.kva" type="number"></td>
+                                <td class="font-bold text-gray-800">UPS总功率 (kVA)</td>
+                                <td class="p-0"><input v-model.number="upsF.kva" type="number" class="font-bold text-blue-600"></td>
                                 <td rowspan="6" class="align-middle bg-blue-50">
-                                    <div class="text-xs text-blue-600 mb-1">理论续航时间</div>
-                                    <div class="text-2xl font-black text-blue-700 my-2">{{ upsFResult }} <span class="text-sm font-normal">h</span></div>
-                                    <button @click="copyText(`UPS ${upsF.kva||0}kVA(负载${upsF.load||0}%), 电池${upsF.ah||0}Ah×${upsF.count||0}节: 续航约 ${upsFResult} 小时`)" class="mt-4 text-xs bg-white text-blue-600 px-3 py-1.5 rounded shadow-sm border border-blue-200 hover:bg-blue-100 transition">一键复制</button>
+                                    <div class="text-xs text-gray-600 font-bold mb-1">理论续航时间</div>
+                                    <div class="text-3xl font-black text-blue-700 my-2">{{ upsFResult }} <span class="text-sm font-normal text-gray-600">h</span></div>
                                 </td>
                             </tr>
                             <tr>
-                                <td>实际负载率 (%)</td>
+                                <td class="font-bold text-gray-800">实际负载率 (%)</td>
                                 <td class="p-0"><input v-model.number="upsF.load" type="number" placeholder="默认 80"></td>
                             </tr>
                             <tr>
-                                <td>单节电池容量 (Ah)</td>
+                                <td class="font-bold text-gray-800">单节电池容量 (Ah)</td>
                                 <td class="p-0"><input v-model.number="upsF.ah" type="number"></td>
                             </tr>
                             <tr>
-                                <td>电池总节数 (节)</td>
+                                <td class="font-bold text-gray-800">电池总节数 (节)</td>
                                 <td class="p-0"><input v-model.number="upsF.count" type="number"></td>
                             </tr>
                             <tr>
-                                <td>单节电池电压 (V)</td>
+                                <td class="font-bold text-gray-800">单节电池电压 (V)</td>
                                 <td class="p-0"><input v-model.number="upsF.v" type="number" placeholder="通常 12"></td>
                             </tr>
                             <tr>
-                                <td>损耗系数</td>
+                                <td class="font-bold text-gray-800">损耗系数</td>
                                 <td class="p-0"><input v-model.number="upsF.loss" type="number" step="0.01" placeholder="默认 0.85"></td>
                             </tr>
                         </tbody>
@@ -1626,7 +1621,7 @@ video {
                 </div>
 
                 <!-- 反向：算电池 -->
-                <div v-if="upsMode === 'backward'" class="bg-white rounded-lg shadow overflow-hidden">
+                <div v-if="upsMode === 'backward'" class="bg-white shadow overflow-hidden border border-gray-300">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -1637,53 +1632,45 @@ video {
                         </thead>
                         <tbody>
                             <tr>
-                                <td>目标续航 (小时)</td>
-                                <td class="p-0"><input v-model.number="upsB.time" type="number"></td>
+                                <td class="font-bold text-gray-800">目标续航 (小时)</td>
+                                <td class="p-0"><input v-model.number="upsB.time" type="number" class="font-bold text-blue-600"></td>
                                 <td rowspan="2" class="align-middle bg-indigo-50 border-b border-indigo-200">
-                                    <div class="text-xs text-indigo-600 mb-1">单组所需容量</div>
-                                    <div class="text-2xl font-black text-indigo-700">{{ upsBResult.ah }} <span class="text-sm font-normal">Ah</span></div>
+                                    <div class="text-xs text-gray-600 font-bold mb-1">单组所需容量</div>
+                                    <div class="text-3xl font-black text-indigo-700">{{ upsBResult.ah }} <span class="text-sm font-normal text-gray-600">Ah</span></div>
                                 </td>
                             </tr>
                             <tr>
-                                <td>实际负载功率 (kW)</td>
+                                <td class="font-bold text-gray-800">实际负载功率 (kW)</td>
                                 <td class="p-0"><input v-model.number="upsB.kw" type="number"></td>
                             </tr>
                             <tr>
-                                <td>母线电压 (V)</td>
+                                <td class="font-bold text-gray-800">母线电压 (V)</td>
                                 <td class="p-0"><input v-model.number="upsB.sysV" type="number" placeholder="如 192"></td>
                                 <td rowspan="3" class="align-middle bg-indigo-50">
-                                    <div class="text-xs text-indigo-600 mb-1">所需总节数</div>
-                                    <div class="text-2xl font-black text-indigo-700">{{ upsBResult.count }} <span class="text-sm font-normal">节</span></div>
+                                    <div class="text-xs text-gray-600 font-bold mb-1">所需总节数</div>
+                                    <div class="text-3xl font-black text-indigo-700">{{ upsBResult.count }} <span class="text-sm font-normal text-gray-600">节</span></div>
                                 </td>
                             </tr>
                             <tr>
-                                <td>单节电池电压 (V)</td>
+                                <td class="font-bold text-gray-800">单节电池电压 (V)</td>
                                 <td class="p-0"><input v-model.number="upsB.v" type="number" placeholder="通常 12"></td>
                             </tr>
                             <tr>
-                                <td>损耗系数</td>
+                                <td class="font-bold text-gray-800">损耗系数</td>
                                 <td class="p-0"><input v-model.number="upsB.loss" type="number" step="0.01" placeholder="默认 0.85"></td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="p-2">
-                                     <button @click="copyText(`目标续航${upsB.time||0}h, 负载${upsB.kw||0}kW: 推荐配置 ${upsBResult.ah}Ah电池 ${upsBResult.count} 节 (母线电压${upsB.sysV||0}V)`)" class="w-full bg-indigo-600 text-white py-2 rounded font-medium shadow-sm hover:bg-indigo-700 transition">一键复制推荐配置</button>
-                                </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                
+                <div class="text-xs text-gray-500 mt-2 text-center bg-gray-50 py-2 border border-gray-200">
+                    * 计算结果仅供现场估算参考
                 </div>
             </div>
             
             <!-- Padding for bottom scrolling -->
             <div class="h-8"></div>
         </main>
-        
-        <!-- Global Toast -->
-        <transition name="toast">
-            <div v-if="toastMsg" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full shadow-2xl z-50 text-sm whitespace-nowrap font-medium tracking-wide">
-                {{ toastMsg }}
-            </div>
-        </transition>
     </div>
 
     <script>
@@ -1691,27 +1678,27 @@ video {
 
         // Data Source Dictionaries
         const copperData = [
-            { spec: '15×3', weight: 0.40, open_ac: 170, open_dc: 175, closed_ac: 144, closed_dc: 148 },
-            { spec: '20×3', weight: 0.53, open_ac: 220, open_dc: 225, closed_ac: 187, closed_dc: 191 },
-            { spec: '25×3', weight: 0.67, open_ac: 270, open_dc: 275, closed_ac: 229, closed_dc: 233 },
-            { spec: '30×4', weight: 1.07, open_ac: 360, open_dc: 365, closed_ac: 306, closed_dc: 310 },
-            { spec: '40×4', weight: 1.42, open_ac: 470, open_dc: 475, closed_ac: 399, closed_dc: 403 },
-            { spec: '40×5', weight: 1.78, open_ac: 520, open_dc: 525, closed_ac: 442, closed_dc: 446 },
-            { spec: '50×5', weight: 2.23, open_ac: 630, open_dc: 640, closed_ac: 535, closed_dc: 544 },
-            { spec: '50×6', weight: 2.67, open_ac: 690, open_dc: 700, closed_ac: 586, closed_dc: 595 },
-            { spec: '60×6', weight: 3.20, open_ac: 810, open_dc: 820, closed_ac: 688, closed_dc: 697 },
-            { spec: '60×8', weight: 4.27, open_ac: 930, open_dc: 940, closed_ac: 790, closed_dc: 799 },
-            { spec: '80×6', weight: 4.27, open_ac: 1050, open_dc: 1070, closed_ac: 892, closed_dc: 909 },
-            { spec: '80×8', weight: 5.70, open_ac: 1200, open_dc: 1230, closed_ac: 1020, closed_dc: 1045 },
-            { spec: '80×10', weight: 7.12, open_ac: 1350, open_dc: 1380, closed_ac: 1147, closed_dc: 1173 },
-            { spec: '100×8', weight: 7.12, open_ac: 1470, open_dc: 1520, closed_ac: 1249, closed_dc: 1292 },
-            { spec: '100×10', weight: 8.90, open_ac: 1650, open_dc: 1700, closed_ac: 1402, closed_dc: 1445 },
-            { spec: '120×8', weight: 8.54, open_ac: 1750, open_dc: 1800, closed_ac: 1487, closed_dc: 1530 },
-            { spec: '120×10', weight: 10.68, open_ac: 1950, open_dc: 2000, closed_ac: 1657, closed_dc: 1700 },
-            { spec: '150×10', weight: 13.35, open_ac: 2400, open_dc: 2450, closed_ac: 2040, closed_dc: 2082 },
-            { spec: '200×10', weight: 17.80, open_ac: 3100, open_dc: 3200, closed_ac: 2635, closed_dc: 2720 },
-            { spec: '250×10', weight: 22.25, open_ac: 3800, open_dc: 3900, closed_ac: 3230, closed_dc: 3315 },
-            { spec: '300×10', weight: 26.70, open_ac: 4500, open_dc: 4600, closed_ac: 3825, closed_dc: 3910 }
+            { spec: '15*3', weight: 0.41, o_ac_1: '171', o_ac_2: null, o_ac_3: null, o_dc_1: '171', o_dc_2: null, c_ac_1: '140', c_ac_2: null, c_ac_3: null, c_dc_1: '140', c_dc_2: null },
+            { spec: '20*3', weight: 0.54, o_ac_1: '224', o_ac_2: null, o_ac_3: null, o_dc_1: '224', o_dc_2: null, c_ac_1: '185', c_ac_2: null, c_ac_3: null, c_dc_1: '186', c_dc_2: null },
+            { spec: '25*3', weight: 0.67, o_ac_1: '278', o_ac_2: null, o_ac_3: null, o_dc_1: '278', o_dc_2: null, c_ac_1: '230', c_ac_2: null, c_ac_3: null, c_dc_1: '228', c_dc_2: null },
+            { spec: '30*3', weight: 0.8, o_ac_1: '330', o_ac_2: null, o_ac_3: null, o_dc_1: '330', o_dc_2: null, c_ac_1: '270', c_ac_2: null, c_ac_3: null, c_dc_1: '270', c_dc_2: null },
+            { spec: '30*4', weight: 1.066, o_ac_1: '388', o_ac_2: null, o_ac_3: null, o_dc_1: '388', o_dc_2: null, c_ac_1: '320', c_ac_2: null, c_ac_3: null, c_dc_1: '318', c_dc_2: null },
+            { spec: '40*4', weight: 1.424, o_ac_1: '510', o_ac_2: null, o_ac_3: null, o_dc_1: '510', o_dc_2: '890', c_ac_1: '420', c_ac_2: null, c_ac_3: null, c_dc_1: '420', c_dc_2: '730' },
+            { spec: '40*5', weight: 1.78, o_ac_1: '570', o_ac_2: null, o_ac_3: null, o_dc_1: '575', o_dc_2: '1020', c_ac_1: '465', c_ac_2: null, c_ac_3: null, c_dc_1: '470', c_dc_2: '835' },
+            { spec: '50*5', weight: 2.225, o_ac_1: '700', o_ac_2: null, o_ac_3: null, o_dc_1: '710', o_dc_2: '1240', c_ac_1: '575', c_ac_2: null, c_ac_3: null, c_dc_1: '580', c_dc_2: '1020' },
+            { spec: '50*6', weight: 2.67, o_ac_1: '780', o_ac_2: null, o_ac_3: null, o_dc_1: '782', o_dc_2: '1385', c_ac_1: '640', c_ac_2: null, c_ac_3: null, c_dc_1: '640', c_dc_2: '1130' },
+            { spec: '60*5', weight: 2.67, o_ac_1: '836', o_ac_2: null, o_ac_3: null, o_dc_1: null, o_dc_2: null, c_ac_1: '685', c_ac_2: null, c_ac_3: null, c_dc_1: null, c_dc_2: null },
+            { spec: '60*6', weight: 3.204, o_ac_1: '920', o_ac_2: '1420', o_ac_3: '1830', o_dc_1: '935', o_dc_2: '1620', c_ac_1: '750', c_ac_2: '1165', c_ac_3: '1500', c_dc_1: '765', c_dc_2: '1330' },
+            { spec: '60*8', weight: 4.272, o_ac_1: '1080', o_ac_2: '1760', o_ac_3: '2280', o_dc_1: '1100', o_dc_2: '2030', c_ac_1: '885', c_ac_2: '1440', c_ac_3: '1870', c_dc_1: '900', c_dc_2: '1660' },
+            { spec: '60*10', weight: 5.34, o_ac_1: '1200', o_ac_2: '2090', o_ac_3: '2690', o_dc_1: '1245', o_dc_2: '2220', c_ac_1: '985', c_ac_2: '1710', c_ac_3: '2200', c_dc_1: '1020', c_dc_2: '1820' },
+            { spec: '80*6', weight: 4.272, o_ac_1: '1210', o_ac_2: '1720', o_ac_3: '2220', o_dc_1: '1230', o_dc_2: '2145', c_ac_1: '980', c_ac_2: '1410', c_ac_3: '1820', c_dc_1: '1010', c_dc_2: '1760' },
+            { spec: '80*8', weight: 5.698, o_ac_1: '1380', o_ac_2: '2140', o_ac_3: '2750', o_dc_1: '1430', o_dc_2: '2520', c_ac_1: '1130', c_ac_2: '1750', c_ac_3: '2250', c_dc_1: '1170', c_dc_2: '2060' },
+            { spec: '80*10', weight: 7.12, o_ac_1: '1550', o_ac_2: '2530', o_ac_3: '3260', o_dc_1: '1620', o_dc_2: '2860', c_ac_1: '1270', c_ac_2: '2070', c_ac_3: '2670', c_dc_1: '1330', c_dc_2: '2340' },
+            { spec: '100*6', weight: 5.34, o_ac_1: '1480', o_ac_2: '2020', o_ac_3: '2586', o_dc_1: '1530', o_dc_2: '2645', c_ac_1: '1210', c_ac_2: '1660', c_ac_3: '2120', c_dc_1: '1250', c_dc_2: '2165' },
+            { spec: '100*8', weight: 7.12, o_ac_1: '1700', o_ac_2: '2500', o_ac_3: '3200', o_dc_1: '1780', o_dc_2: '3105', c_ac_1: '1390', c_ac_2: '2050', c_ac_3: '2620', c_dc_1: '1460', c_dc_2: '2540' },
+            { spec: '100*10', weight: 8.9, o_ac_1: '1885', o_ac_2: '2940', o_ac_3: '3800', o_dc_1: '2010', o_dc_2: '3530', c_ac_1: '1545', c_ac_2: '2410', c_ac_3: '3110', c_dc_1: '1650', c_dc_2: '2890' },
+            { spec: '120*8', weight: 8.46, o_ac_1: '1960', o_ac_2: '2780', o_ac_3: '3540', o_dc_1: '2120', o_dc_2: '3580', c_ac_1: '1610', c_ac_2: '2280', c_ac_3: '2900', c_dc_1: '1740', c_dc_2: '2930' },
+            { spec: '120*10', weight: 10.65, o_ac_1: '2160', o_ac_2: '3340', o_ac_3: '4250', o_dc_1: '2400', o_dc_2: '4070', c_ac_1: '1770', c_ac_2: '2740', c_ac_3: '3480', c_dc_1: '1970', c_dc_2: '3340' }
         ];
 
         // Generator for profile steel
@@ -1729,6 +1716,12 @@ video {
         const angleSteelSpecs = [
             {w:20, t:3}, {w:25, t:3}, {w:30, t:3}, {w:40, t:4}, {w:50, t:5}, {w:63, t:6}, {w:70, t:7}, {w:75, t:8}, {w:80, t:8}, {w:100, t:10}
         ].map(item => ({ spec: `∠${item.w}×${item.w}×${item.t}`, weight: ((2*item.w - item.t) * item.t * 0.00785).toFixed(2) }));
+        const unequalAngleSteelSpecs = [
+            {w1:25, w2:16, t:3, weight:0.912}, {w1:32, w2:20, t:3, weight:1.171}, {w1:40, w2:25, t:3, weight:1.484},
+            {w1:45, w2:28, t:3, weight:1.687}, {w1:50, w2:32, t:4, weight:2.494}, {w1:56, w2:36, t:4, weight:2.818},
+            {w1:63, w2:40, t:5, weight:3.920}, {w1:70, w2:45, t:5, weight:4.403}, {w1:75, w2:50, t:5, weight:4.808},
+            {w1:80, w2:50, t:6, weight:5.935}, {w1:90, w2:56, t:6, weight:6.717}, {w1:100, w2:63, t:7, weight:8.722}
+        ].map(item => ({ spec: `∠${item.w1}×${item.w2}×${item.t}`, weight: item.weight.toFixed(3) }));
         const channelSteelSpecs = [
             { spec: '5#', weight: '5.438' }, { spec: '6.3#', weight: '6.634' },
             { spec: '8#', weight: '8.045' }, { spec: '10#', weight: '10.007' },
@@ -1787,50 +1780,8 @@ video {
                     { id: 'ups', name: 'UPS' }
                 ];
 
-                const toastMsg = ref('');
-                let toastTimer = null;
-                const showToast = (msg) => {
-                    toastMsg.value = msg;
-                    if(toastTimer) clearTimeout(toastTimer);
-                    toastTimer = setTimeout(() => toastMsg.value = '', 2000);
-                };
-
-                const copyText = (text) => {
-                    if (navigator.clipboard && window.isSecureContext) {
-                        navigator.clipboard.writeText(text).then(() => showToast('✅ 复制成功')).catch(() => fallbackCopyText(text));
-                    } else {
-                        fallbackCopyText(text);
-                    }
-                };
-
-                const fallbackCopyText = (text) => {
-                    const el = document.createElement('textarea');
-                    el.value = text;
-                    document.body.appendChild(el);
-                    el.select();
-                    try {
-                        document.execCommand('copy');
-                        showToast('✅ 复制成功');
-                    } catch (err) {
-                        showToast('❌ 复制失败，请手动选择');
-                    }
-                    document.body.removeChild(el);
-                };
-
                 // --- 1. 铜排 ---
-                const copperSearch = ref('');
-                const copperPieces = ref('1');
-                const filteredCopper = computed(() => {
-                    if (!copperSearch.value) return copperData;
-                    return copperData.filter(c => c.spec.includes(copperSearch.value));
-                });
-                const calcEfficiency = (item) => ((item.closed_ac / item.open_ac) * 100).toFixed(1);
-                const getEfficiencyColor = (item) => {
-                    const ratio = item.closed_ac / item.open_ac;
-                    if (ratio > 0.85) return 'text-green-600 font-bold';
-                    if (ratio >= 0.75) return 'text-yellow-600 font-bold';
-                    return 'text-red-600 font-bold';
-                };
+                // (No search needed)
 
                 // --- 2. 型材 ---
                 const profileType = ref('channel');
@@ -1845,6 +1796,7 @@ video {
                     if(profileType.value === 'round') source = roundSteelSpecs;
                     if(profileType.value === 'square') source = squareSteelSpecs;
                     if(profileType.value === 'angle') source = angleSteelSpecs;
+                    if(profileType.value === 'unequal_angle') source = unequalAngleSteelSpecs;
                     if(profileType.value === 'channel') source = channelSteelSpecs;
                     
                     if (!profileSearch.value) return source;
@@ -1985,9 +1937,9 @@ video {
                 });
 
                 return {
-                    currentTab, tabs, toastMsg, copyText,
+                    currentTab, tabs,
                     // copper
-                    copperSearch, copperPieces, filteredCopper, calcEfficiency, getEfficiencyColor,
+                    copperData,
                     // profile
                     profileType, profileSearch, profileTypeName, filteredProfile,
                     // cable
