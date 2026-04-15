@@ -1227,6 +1227,53 @@ video {
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto bg-gray-50 p-4 z-10">
             
+            <!-- 0. 铝排模块 -->
+            <div v-show="currentTab === 'aluminum'" class="space-y-4">
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
+                    <div class="overflow-x-auto max-h-[70vh]">
+                        <table class="data-table" style="min-width: 650px; font-size: 0.75rem;">
+                            <thead>
+                                <tr>
+                                    <th rowspan="3" class="align-middle px-1">母线尺寸宽<br>×厚(mm)</th>
+                                    <th rowspan="3" class="align-middle px-1">重量<br>(kg/m)</th>
+                                    <th colspan="5" class="py-1">敞露母线</th>
+                                    <th colspan="5" class="py-1">封闭母线</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3">交流负荷</th>
+                                    <th colspan="2">直流负荷</th>
+                                    <th colspan="3">交流负荷</th>
+                                    <th colspan="2">直流负荷</th>
+                                </tr>
+                                <tr>
+                                    <th class="px-1">1</th><th class="px-1">2</th><th class="px-1">3</th>
+                                    <th class="px-1">1</th><th class="px-1">2</th>
+                                    <th class="px-1">1</th><th class="px-1">2</th><th class="px-1">3</th>
+                                    <th class="px-1">1</th><th class="px-1">2</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in aluminumBusbarData" :key="item.spec">
+                                    <td class="font-bold text-gray-800 whitespace-nowrap px-1">{{ item.spec }}</td>
+                                    <td class="text-gray-700 px-1">{{ item.weight }}</td>
+                                    <td class="text-green-600 font-bold px-1">{{ item.o_ac_1 }}</td>
+                                    <td class="text-green-600 font-bold px-1">{{ item.o_ac_2 || '' }}</td>
+                                    <td class="text-green-600 font-bold px-1">{{ item.o_ac_3 || '' }}</td>
+                                    <td class="text-orange-600 font-bold px-1">{{ item.o_dc_1 }}</td>
+                                    <td class="text-orange-600 font-bold px-1">{{ item.o_dc_2 || '' }}</td>
+                                    <td class="text-green-600 font-bold px-1">{{ item.c_ac_1 }}</td>
+                                    <td class="text-green-600 font-bold px-1">{{ item.c_ac_2 || '' }}</td>
+                                    <td class="text-green-600 font-bold px-1">{{ item.c_ac_3 || '' }}</td>
+                                    <td class="text-orange-600 font-bold px-1">{{ item.c_dc_1 }}</td>
+                                    <td class="text-orange-600 font-bold px-1">{{ item.c_dc_2 || '' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 text-center bg-gray-50 py-1 border border-gray-200">* 环境温度25℃，铝合金母线载流量(A)</div>
+            </div>
+
             <!-- 1. 铜排模块 -->
             <div v-show="currentTab === 'copper'" class="space-y-4">
                 
@@ -1330,11 +1377,18 @@ video {
 
                 <div class="flex gap-2">
                     <select v-model="cableModelFilter" class="p-2 border border-gray-300 rounded bg-white outline-none flex-1">
-                        <option value="all">全部型号 (包含 VV, YJV, BVV, YJV22)</option>
-                        <option value="YJV">YJV</option>
-                        <option value="VV">VV</option>
-                        <option value="YJV22">YJV22</option>
-                        <option value="BVV">BVV</option>
+                        <option value="all">全部型号</option>
+                        <optgroup label="── 铜芯 ──">
+                            <option value="YJV">YJV（铜芯交联聚乙烯）</option>
+                            <option value="VV">VV（铜芯聚氯乙烯）</option>
+                            <option value="YJV22">YJV22（铜芯铠装交联）</option>
+                            <option value="BVV">BVV（铜芯聚氯乙烯护套）</option>
+                        </optgroup>
+                        <optgroup label="── 铝芯 ──">
+                            <option value="YJLV">YJLV（铝芯交联聚乙烯）</option>
+                            <option value="VLV">VLV（铝芯聚氯乙烯）</option>
+                            <option value="YJLV22">YJLV22（铝芯铠装交联）</option>
+                        </optgroup>
                     </select>
                 </div>
                 
@@ -1532,6 +1586,44 @@ video {
                 </div>
             </div>
 
+            <!-- 架空线模块 -->
+            <div v-show="currentTab === 'overhead'" class="space-y-4">
+                <div class="flex gap-2">
+                    <select v-model="overheadType" class="p-2 border border-gray-300 rounded bg-white outline-none flex-1">
+                        <option value="LJ">LJ (铝绞线)</option>
+                        <option value="LGJ">LGJ (钢芯铝绞线)</option>
+                        <option value="JKLGYJ">JKLGYJ (交联架空电缆)</option>
+                    </select>
+                </div>
+                <div class="bg-white shadow overflow-hidden border border-gray-300">
+                    <div class="overflow-x-auto max-h-[65vh]">
+                        <table class="data-table" style="font-size: 0.8rem;">
+                            <thead>
+                                <tr>
+                                    <th>型号</th>
+                                    <th>截面<br>(mm²)</th>
+                                    <th>外径<br>(mm)</th>
+                                    <th>参考重量<br>(kg/km)</th>
+                                    <th>载流量<br>25℃(A)</th>
+                                    <th>载流量<br>40℃(A)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in filteredOverhead" :key="item.model">
+                                    <td class="font-bold text-gray-800 whitespace-nowrap">{{ item.model }}</td>
+                                    <td>{{ item.area }}</td>
+                                    <td>{{ item.diameter }}</td>
+                                    <td>{{ item.weight }}</td>
+                                    <td class="text-blue-600 font-bold">{{ item.i_25 }}</td>
+                                    <td class="text-orange-600 font-bold">{{ item.i_40 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 text-center bg-gray-50 py-1 border border-gray-200">* 环境温度25℃/40℃，导线最高允许温度70℃（JKLGYJ为90℃），无风，空气中</div>
+            </div>
+
             <!-- 6. 换算模块 -->
             <div v-show="currentTab === 'calc'" class="space-y-4">
                 <div class="bg-white shadow overflow-hidden border border-gray-300">
@@ -1567,6 +1659,35 @@ video {
                 </div>
                 <div class="text-xs text-gray-500 mt-2 text-center bg-gray-50 py-2 border border-gray-200">
                     * 参考公式: S = P / cosΦ, I = (P×1000) / (√3×U×cosΦ×η), 默认U=380V
+                </div>
+
+                <!-- 变压器容量→kW 换算 -->
+                <div class="bg-white shadow overflow-hidden border border-gray-300 mt-4">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="40%" colspan="2">🔌 变压器容量换算（kVA→kW）</th>
+                                <th width="30%">计算结果</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-bold text-gray-800" width="35%">变压器容量 (kVA)</td>
+                                <td class="p-0" width="35%"><input v-model.number="calcTrKva" type="number" inputmode="decimal" placeholder="输入kVA" class="font-bold text-blue-600"></td>
+                                <td rowspan="2" class="align-middle bg-blue-50">
+                                    <div class="text-xs text-gray-600 font-bold mb-1">最大输出有功 (P)</div>
+                                    <div class="text-2xl font-bold text-blue-700">{{ calcTrKwResult }} <span class="text-xs font-normal text-gray-600">kW</span></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-gray-800">功率因数 (cosΦ)</td>
+                                <td class="p-0"><input v-model.number="calcTrPf" type="number" inputmode="decimal" step="0.01" placeholder="默认 0.85"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-xs text-gray-500 text-center bg-gray-50 py-2 border border-gray-200">
+                    * 变压器有功功率: P(kW) = S(kVA) × cosΦ
                 </div>
             </div>
 
@@ -1730,9 +1851,11 @@ video {
         ];
 
         // Cable dynamic generation
-        const baseCableAir = { '1.5': 22, '2.5': 30, '4': 39, '6': 50, '10': 69, '16': 93, '25': 125, '35': 150, '50': 185, '70': 230, '95': 280, '120': 320, '150': 365, '185': 415, '240': 490, '300': 560 };
-        const baseCableBuried = { '1.5': 30, '2.5': 40, '4': 52, '6': 65, '10': 87, '16': 114, '25': 147, '35': 175, '50': 210, '70': 255, '95': 305, '120': 345, '150': 390, '185': 440, '240': 510, '300': 580 };
+        // 铜芯电缆基础载流量（含400mm²）
+        const baseCableAir    = { '1.5': 22, '2.5': 30, '4': 39, '6': 50, '10': 69, '16': 93, '25': 125, '35': 150, '50': 185, '70': 230, '95': 280, '120': 320, '150': 365, '185': 415, '240': 490, '300': 560, '400': 635 };
+        const baseCableBuried = { '1.5': 30, '2.5': 40, '4': 52, '6': 65, '10': 87, '16': 114, '25': 147, '35': 175, '50': 210, '70': 255, '95': 305, '120': 345, '150': 390, '185': 440, '240': 510, '300': 580, '400': 655 };
         const cableFullData = [];
+        // 铜芯电缆
         ['3', '4'].forEach(core => {
             ['VV', 'YJV', 'BVV', 'YJV22'].forEach(model => {
                 Object.keys(baseCableAir).forEach(area => {
@@ -1750,12 +1873,94 @@ video {
                 });
             });
         });
+        // 铝芯电缆（载流量约为铜芯的0.77倍）
+        ['3', '4'].forEach(core => {
+            ['VLV', 'YJLV', 'YJLV22'].forEach(model => {
+                Object.keys(baseCableAir).forEach(area => {
+                    let mult = 0.77; // 铝芯系数
+                    if (model === 'VLV') mult *= 0.8;
+                    if (model === 'YJLV22') mult *= 0.95;
+                    if (core === '4') mult *= 0.9;
+                    cableFullData.push({
+                        core: core,
+                        model: model,
+                        area: area,
+                        air: Math.round(baseCableAir[area] * mult),
+                        buried: Math.round(baseCableBuried[area] * mult)
+                    });
+                });
+            });
+        });
+
+        // Aluminum busbar data (铝排载流量)
+        const aluminumBusbarData = [
+            { spec: '40×4',  weight: 0.433, o_ac_1: '240', o_ac_2: null,   o_ac_3: null,   o_dc_1: '240', o_dc_2: null,   c_ac_1: '195', c_ac_2: null,   c_ac_3: null,   c_dc_1: '195', c_dc_2: null   },
+            { spec: '40×5',  weight: 0.541, o_ac_1: '275', o_ac_2: null,   o_ac_3: null,   o_dc_1: '280', o_dc_2: '490',  c_ac_1: '225', c_ac_2: null,   c_ac_3: null,   c_dc_1: '228', c_dc_2: '400'  },
+            { spec: '50×5',  weight: 0.676, o_ac_1: '340', o_ac_2: null,   o_ac_3: null,   o_dc_1: '345', o_dc_2: '605',  c_ac_1: '278', c_ac_2: null,   c_ac_3: null,   c_dc_1: '282', c_dc_2: '494'  },
+            { spec: '50×6',  weight: 0.811, o_ac_1: '375', o_ac_2: null,   o_ac_3: null,   o_dc_1: '380', o_dc_2: '670',  c_ac_1: '308', c_ac_2: null,   c_ac_3: null,   c_dc_1: '311', c_dc_2: '548'  },
+            { spec: '60×6',  weight: 0.973, o_ac_1: '445', o_ac_2: '685',  o_ac_3: '883',  o_dc_1: '452', o_dc_2: '783',  c_ac_1: '362', c_ac_2: '562',  c_ac_3: '724',  c_dc_1: '370', c_dc_2: '642'  },
+            { spec: '60×8',  weight: 1.298, o_ac_1: '520', o_ac_2: '847',  o_ac_3: '1100', o_dc_1: '530', o_dc_2: '978',  c_ac_1: '427', c_ac_2: '694',  c_ac_3: '902',  c_dc_1: '434', c_dc_2: '800'  },
+            { spec: '60×10', weight: 1.622, o_ac_1: '580', o_ac_2: '1008', o_ac_3: '1298', o_dc_1: '600', o_dc_2: '1070', c_ac_1: '475', c_ac_2: '825',  c_ac_3: '1061', c_dc_1: '492', c_dc_2: '877'  },
+            { spec: '80×6',  weight: 1.298, o_ac_1: '585', o_ac_2: '830',  o_ac_3: '1072', o_dc_1: '594', o_dc_2: '1035', c_ac_1: '473', c_ac_2: '680',  c_ac_3: '879',  c_dc_1: '487', c_dc_2: '848'  },
+            { spec: '80×8',  weight: 1.731, o_ac_1: '667', o_ac_2: '1033', o_ac_3: '1328', o_dc_1: '690', o_dc_2: '1215', c_ac_1: '545', c_ac_2: '845',  c_ac_3: '1086', c_dc_1: '565', c_dc_2: '994'  },
+            { spec: '80×10', weight: 2.163, o_ac_1: '748', o_ac_2: '1221', o_ac_3: '1574', o_dc_1: '782', o_dc_2: '1380', c_ac_1: '613', c_ac_2: '999',  c_ac_3: '1288', c_dc_1: '641', c_dc_2: '1129' },
+            { spec: '100×6', weight: 1.622, o_ac_1: '714', o_ac_2: '975',  o_ac_3: '1248', o_dc_1: '738', o_dc_2: '1276', c_ac_1: '584', c_ac_2: '801',  c_ac_3: '1023', c_dc_1: '603', c_dc_2: '1044' },
+            { spec: '100×8', weight: 2.163, o_ac_1: '820', o_ac_2: '1207', o_ac_3: '1545', o_dc_1: '859', o_dc_2: '1498', c_ac_1: '671', c_ac_2: '989',  c_ac_3: '1265', c_dc_1: '703', c_dc_2: '1226' },
+            { spec: '100×10',weight: 2.703, o_ac_1: '910', o_ac_2: '1419', o_ac_3: '1834', o_dc_1: '970', o_dc_2: '1703', c_ac_1: '745', c_ac_2: '1163', c_ac_3: '1502', c_dc_1: '795', c_dc_2: '1394' },
+            { spec: '120×8', weight: 2.571, o_ac_1: '946', o_ac_2: '1342', o_ac_3: '1709', o_dc_1: '1023', o_dc_2: '1727', c_ac_1: '777', c_ac_2: '1100', c_ac_3: '1401', c_dc_1: '839', c_dc_2: '1414' },
+            { spec: '120×10',weight: 3.243, o_ac_1:'1043', o_ac_2: '1612', o_ac_3: '2051', o_dc_1: '1158', o_dc_2: '1963', c_ac_1: '854', c_ac_2: '1321', c_ac_3: '1679', c_dc_1: '949', c_dc_2: '1607' },
+        ];
+
+        // Overhead line data (架空线载流量)
+        // LJ 铝绞线（环境温度25℃，导线允许温度70℃，无风，空气中）
+        const overheadLJData = [
+            { model:'LJ-16',    area:'16',    diameter:'5.1',  weight:'44',   i_25:'105', i_40:'83'  },
+            { model:'LJ-25',    area:'25',    diameter:'6.4',  weight:'68',   i_25:'135', i_40:'107' },
+            { model:'LJ-35',    area:'35',    diameter:'7.5',  weight:'96',   i_25:'170', i_40:'134' },
+            { model:'LJ-50',    area:'50',    diameter:'9.0',  weight:'136',  i_25:'215', i_40:'170' },
+            { model:'LJ-70',    area:'70',    diameter:'10.7', weight:'191',  i_25:'265', i_40:'210' },
+            { model:'LJ-95',    area:'95',    diameter:'12.4', weight:'259',  i_25:'325', i_40:'257' },
+            { model:'LJ-120',   area:'120',   diameter:'13.9', weight:'328',  i_25:'380', i_40:'300' },
+            { model:'LJ-150',   area:'150',   diameter:'15.6', weight:'410',  i_25:'435', i_40:'344' },
+            { model:'LJ-185',   area:'185',   diameter:'17.3', weight:'506',  i_25:'500', i_40:'395' },
+            { model:'LJ-240',   area:'240',   diameter:'19.7', weight:'657',  i_25:'590', i_40:'466' },
+            { model:'LJ-300',   area:'300',   diameter:'22.0', weight:'821',  i_25:'680', i_40:'537' },
+        ];
+
+        // LGJ 钢芯铝绞线
+        const overheadLGJData = [
+            { model:'LGJ-16/3',   area:'16/3',   diameter:'5.4',  weight:'60',   i_25:'105', i_40:'83'  },
+            { model:'LGJ-25/4',   area:'25/4',   diameter:'6.6',  weight:'90',   i_25:'130', i_40:'103' },
+            { model:'LGJ-35/6',   area:'35/6',   diameter:'8.0',  weight:'128',  i_25:'170', i_40:'134' },
+            { model:'LGJ-50/8',   area:'50/8',   diameter:'9.6',  weight:'182',  i_25:'210', i_40:'166' },
+            { model:'LGJ-70/11',  area:'70/11',  diameter:'11.4', weight:'256',  i_25:'265', i_40:'209' },
+            { model:'LGJ-95/16',  area:'95/16',  diameter:'13.5', weight:'348',  i_25:'325', i_40:'257' },
+            { model:'LGJ-120/20', area:'120/20', diameter:'15.2', weight:'440',  i_25:'380', i_40:'300' },
+            { model:'LGJ-150/25', area:'150/25', diameter:'17.0', weight:'550',  i_25:'445', i_40:'352' },
+            { model:'LGJ-185/30', area:'185/30', diameter:'18.9', weight:'678',  i_25:'515', i_40:'407' },
+            { model:'LGJ-240/40', area:'240/40', diameter:'21.6', weight:'880',  i_25:'615', i_40:'486' },
+            { model:'LGJ-300/50', area:'300/50', diameter:'24.2', weight:'1100', i_25:'700', i_40:'553' },
+        ];
+
+        // JKLGYJ 交联聚乙烯绝缘钢芯铝绞线架空电缆
+        const overheadJKLGYJData = [
+            { model:'JKLGYJ-16',  area:'16',  diameter:'9.8',  weight:'134',  i_25:'90',  i_40:'71'  },
+            { model:'JKLGYJ-25',  area:'25',  diameter:'11.3', weight:'177',  i_25:'120', i_40:'95'  },
+            { model:'JKLGYJ-35',  area:'35',  diameter:'12.5', weight:'224',  i_25:'150', i_40:'119' },
+            { model:'JKLGYJ-50',  area:'50',  diameter:'14.1', weight:'296',  i_25:'185', i_40:'146' },
+            { model:'JKLGYJ-70',  area:'70',  diameter:'16.3', weight:'395',  i_25:'230', i_40:'182' },
+            { model:'JKLGYJ-95',  area:'95',  diameter:'18.6', weight:'518',  i_25:'280', i_40:'221' },
+            { model:'JKLGYJ-120', area:'120', diameter:'20.5', weight:'637',  i_25:'330', i_40:'261' },
+            { model:'JKLGYJ-150', area:'150', diameter:'22.7', weight:'773',  i_25:'375', i_40:'296' },
+            { model:'JKLGYJ-185', area:'185', diameter:'25.3', weight:'948',  i_25:'430', i_40:'340' },
+            { model:'JKLGYJ-240', area:'240', diameter:'28.6', weight:'1220', i_25:'510', i_40:'403' },
+        ];
 
         const transformerCapacities = [50, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600];
 
         createApp({
             setup() {
-                const validTabs = ['copper', 'profile', 'cable', 'transformer', 'box', 'calc', 'ups'];
+                const validTabs = ['aluminum', 'copper', 'profile', 'cable', 'overhead', 'transformer', 'box', 'calc', 'ups'];
                 const initialTab = validTabs.includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'copper';
                 const currentTab = ref(initialTab);
                 
@@ -1771,9 +1976,11 @@ video {
                 });
 
                 const tabs = [
+                    { id: 'aluminum', name: '铝排' },
                     { id: 'copper', name: '铜排' },
                     { id: 'profile', name: '型材' },
                     { id: 'cable', name: '电缆' },
+                    { id: 'overhead', name: '架空线' },
                     { id: 'transformer', name: '变压器' },
                     { id: 'box', name: '箱体' },
                     { id: 'calc', name: '换算' },
@@ -1801,6 +2008,14 @@ video {
                     
                     if (!profileSearch.value) return source;
                     return source.filter(c => c.spec.includes(profileSearch.value));
+                });
+
+                // --- 架空线 ---
+                const overheadType = ref('LJ');
+                const filteredOverhead = computed(() => {
+                    if (overheadType.value === 'LJ') return overheadLJData;
+                    if (overheadType.value === 'LGJ') return overheadLGJData;
+                    return overheadJKLGYJData;
                 });
 
                 // --- 3. 电缆 ---
@@ -1900,6 +2115,16 @@ video {
                     return ((kw * 1000) / (1.732 * 380 * pf * eff)).toFixed(1);
                 });
 
+                // 变压器容量→kW 换算
+                const calcTrKva = ref('');
+                const calcTrPf = ref(0.85);
+                const calcTrKwResult = computed(() => {
+                    const kva = Number(calcTrKva.value);
+                    const pf = Number(calcTrPf.value) || 0.85;
+                    if (!kva) return '0.0';
+                    return (kva * pf).toFixed(1);
+                });
+
                 // --- 7. UPS ---
                 const upsMode = ref('forward');
                 
@@ -1938,18 +2163,23 @@ video {
 
                 return {
                     currentTab, tabs,
+                    // aluminum busbar
+                    aluminumBusbarData,
                     // copper
                     copperData,
                     // profile
                     profileType, profileSearch, profileTypeName, filteredProfile,
                     // cable
                     cableCore, cableModelFilter, filteredCable,
+                    // overhead
+                    overheadType, filteredOverhead,
                     // transformer
                     transformerLowV, transformerData,
                     // box
                     boxMode, boxMat, boxW, boxD, boxH, boxT, boxPriceUnit, boxPrice, boxResult, boxBaseW, boxBaseD, boxBaseT, boxBaseResult,
                     // calc
                     calcKw, calcPf, calcEff, calcResultKva, calcResultCurrent,
+                    calcTrKva, calcTrPf, calcTrKwResult,
                     // ups
                     upsMode, upsF, upsFResult, upsB, upsBResult
                 };
